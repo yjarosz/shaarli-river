@@ -7,7 +7,7 @@ class ShaarliApiClient {
 
 	public $url = null;
 
-	/** 
+	/**
 	 * Constructor
 	 */
 	public function __construct( $url ) {
@@ -44,8 +44,8 @@ class ShaarliApiClient {
 		if( !empty($content) ) {
 
 			$content = json_decode($content);
-
-			return $content;		
+			$content = $this->_filter($action, $content);
+			return $content;
 		}
 		else {
 
@@ -96,5 +96,41 @@ class ShaarliApiClient {
 		$arguments['url'] = $url;
 
 		return $this->callApi('discussion', $arguments);
+	}
+
+	/**
+	 * #vieuxhacktoutpourri
+	 *
+	 * Filter la reponse de l'API suivant les ids specifies
+	 * dans la variable filter (1ere variable de la fonction)
+	 *
+	 * Pour avoir une idee des id a mettre dans cette liste
+	 * allez sur SHAARLI_API_URL/feeds avec SHAARLI_API_URL
+	 * definie dans config.php (Par defaut : https://nexen.mkdir.fr/shaarli-api/feeds),
+	 * et recuperez les ids qui vous interessent.
+	 * Par exemple pour sebsauvage sur l'api de nexen, l'id est 1.
+	 * Cela filtrera les reponses 'feeds / search / latest' et vous
+	 * evitera d'avoir a installer l'API. Par contre vous ne pourrez pas
+	 * ajouter de liens, mais seulement filtrer parmi ceux disponibles sur
+	 * l'API que vous avez choisi.
+	 *
+	 * Il manque la reponse 'top'.
+	 * Ah et il me semble que ca ne marchera qu'avec PHP >= 5.3 (closure).
+	 */
+	private function _filter($action, $content){
+		/* ici je recupere les liens de sebsauvage et Horyax via l'API de nexen. */
+		$filters = array(1, 3);
+
+		if($action == 'feeds' || $action == 'search'){
+			return array_filter($content, function($item) use ($filters){
+				return in_array($item->id, $filters);
+			});
+		}
+		if($action == 'latest'){
+			return array_filter($content, function($item) use ($filters){
+				return in_array($item->feed->id, $filters);
+			});
+		}
+		return $content;
 	}
 }
